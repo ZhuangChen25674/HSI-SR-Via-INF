@@ -24,15 +24,17 @@ torch.cuda.manual_seed(0)
 
 
 class Generate_data(Dataset):
-    def __init__(self, paths, channels=31, fis=63, mode='HR',down_size=[16,16], up_size=[63,63]):
+    def __init__(self, paths,  mode='HR', channels=31, fis=63,down_size=[16,16], up_size=[63,63]):
 
+        super(Generate_data, self).__init__()
 
         self.mode = mode
         self.down_size = down_size
         self.up_size = up_size
-        self.shape = [len(paths), channels, fis, fis]
+        self.shape = [len(paths), (channels-1), 3, fis, fis] #slice = 3
         self.data = torch.zeros(self.shape)
 
+        #Traverse all data
         for i in range(len(paths)):
 
             img = h5py.File(paths[i], 'r')['rad']
@@ -42,7 +44,17 @@ class Generate_data(Dataset):
 
             img = transforms.RandomCrop(63)(img)
 
-            self.data[i] = img
+            # diff data
+            for l in range(channels - 1):
+
+                self.data[i][l][0] = img[l]
+                self.data[i][l][1] = img[l + 1]
+                self.data[i][l][2] = img[l+1] - img[l]
+
+
+        self.data = self.data.reshape((-1, 3, fis, fis))
+        self.shape = self.data.shape
+
 
         if self.mode == 'LR':
             #downsample
@@ -60,7 +72,7 @@ class Generate_data(Dataset):
 
 
     def __len__(self):
-        return self.shape[0]
+        return self.shape[0] 
     
 
     def __getitem__(self, index):
