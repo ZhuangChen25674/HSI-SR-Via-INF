@@ -13,10 +13,14 @@
 '''
 
 
-from data import Generate_data
-from torch.utils.data import DataLoader
+from torch.nn.functional import interpolate
+import torch
 
-PATH = 'DataSet/ICVL/'
+PATH = '/home/hefeng/data1/HSI-SR/DataSet/ICVL/'
+
+def RMSELoss(yhat,y):
+    return torch.sqrt(torch.mean((yhat-y)**2))
+
 
 #return all paths
 def get_paths(PATH = PATH):
@@ -25,41 +29,54 @@ def get_paths(PATH = PATH):
     val_paths = []
     test_paths = []
 
-    with open(PATH + 'train_names.txt', 'r') as f:
+    with open(PATH + 'train_name.txt', 'r') as f:
         for i in f.readlines():
             train_paths.append(PATH + i.strip())
 
-    with open(PATH + 'val_names.txt', 'r') as f:
+    with open(PATH + 'val_name.txt', 'r') as f:
         for i in f.readlines():
             val_paths.append(PATH + i.strip())
 
-    with open(PATH + 'test_names.txt', 'r') as f:
+    with open(PATH + 'test_name.txt', 'r') as f:
         for i in f.readlines():
             test_paths.append(PATH + i.strip())
 
     return train_paths, val_paths, test_paths
 
 
-def get_dataloader(paths):
-    
-    HR_data = Generate_data(paths)
-    LR_data = Generate_data(paths, mode='LR')
+def get_LR(data,down_size=[16,16], up_size=[63,63]):
+    # num 3 63 63
+    data = interpolate(
+                    data,
+                    size=down_size,
+                    mode='bicubic'
+                                )
 
-    HR_dataloader = DataLoader(
-        HR_data,
-        batch_size= 16,
-        shuffle=True,
-        num_workers= 2, 
-        pin_memory= True,
-        drop_last= True,
-    )
-    LR_dataloader = DataLoader(
-        LR_data,
-        batch_size= 16,
-        shuffle=True,
-        num_workers= 2, 
-        pin_memory= True,
-        drop_last= True,
-    )
+    data = interpolate(
+                    data,
+                    size=up_size,
+                    mode='bicubic'
+                                )
+    return data
 
-    return HR_dataloader, LR_dataloader
+
+
+def calc_psnr(img1, img2):
+    return 10. * torch.log10(1. / torch.mean((img1 - img2) ** 2))
+
+
+class AverageMeter(object):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count

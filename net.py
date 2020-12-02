@@ -19,16 +19,36 @@ class SRCNN(nn.Module):
 
     def __init__(self, in_channles=1):
         super(SRCNN,self).__init__()
-        self.model = nn.Sequential(
+        self.model1 = nn.Sequential(
             nn.Conv2d(in_channles, 64, 9, 1, 9 // 2),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 32, 1, 1, 5 // 2),
+            nn.Conv2d(64, 32, 1, 1, 0),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, in_channles, 5, 1, 5 // 2)
+        )
+
+        self.model2 = nn.Sequential(
+            nn.Conv2d(in_channles, 64, 9, 1, 9 // 2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 32, 1, 1, 0),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, in_channles, 5, 1, 5//2)
+        )
+
+        self.model3 = nn.Sequential(
+            nn.Conv2d(in_channles, 64, 9, 1, 9 // 2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 32, 1, 1, 0),
             nn.ReLU(inplace=True),
             nn.Conv2d(32, in_channles, 5, 1, 5//2)
         )
 
 
-    def forward(self,x):
-        y = self.model(x)
+    def forward(self,x1, x2, x3):
+        y1 = self.model1(x1)
+        y2 = self.model2(x2)
+        y3 = self.model3(x3)
+
+        y = (y1 + y2 + y3) / 2
 
         return y

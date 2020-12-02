@@ -30,7 +30,7 @@ class Generate_data(Dataset):
         torch.cuda.manual_seed(0)
         shape = [len(paths), nums, channels, 3, fis, fis]
         self.data = torch.zeros(shape)
-
+        self.HR = torch.zeros([len(paths), nums, channels, fis, fis])
 
         #Traverse all data
         for i in range(len(paths)):
@@ -41,13 +41,16 @@ class Generate_data(Dataset):
             img = torch.tensor(img)
 
             for num in range(nums):
+                # 31 63 63
                 crop_img = transforms.RandomCrop(63)(img)
+                self.HR[i][num] = crop_img
+
                 # 31 3 63 63
                 self.data[i][num] = self.diff_data(crop_img)
 
 
         self.data = self.data.reshape((-1, 3 ,fis, fis))
-                 
+        self.HR = self.HR.reshape((-1, fis, fis))
 
     def __len__(self):
         return self.data.shape[0]
@@ -70,8 +73,12 @@ class Generate_data(Dataset):
 
         return res
 
-    def get_shape(self):
-        return self.data.shape
+
+    def get_HR(self):
+        return self.HR
+
+    def size(self, index):
+        return self.data.size(index)
     
 
         

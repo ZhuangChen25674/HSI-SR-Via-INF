@@ -19,7 +19,14 @@ from torch import nn
 import torch.optim as optim
 from data import Generate_data
 from utils import *
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
+import os, copy
+
+
+EPOCHS = 400
+LR = 1e-4
+BATCH_SIZE = 32
+OUT_DIR = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/weight/'
 
 if __name__ == "__main__":
     
@@ -31,21 +38,131 @@ if __name__ == "__main__":
 
     #set Model
     model = SRCNN().to(device)
-    loss = nn.MSELoss()
-    learn_rate = 1e-4
+    criterion = RMSELoss
+
     optimizer = optim.Adam(
-        model.parameters,
-        lr=lr,
+        model.parameters(),
+        lr=LR,
     )
 
     #Gerate_data
     train_paths, val_paths, test_paths = get_paths()
 
-    HR_train = Generate_data(train_paths)
-    LR_train = Generate_data(train_paths, mode='LR')
+    HR_train_paths = DataLoader(
+        train_paths,
+        batch_size=4,
+        shuffle=True,
+    )
+    Val_train_paths = DataLoader(
+        val_paths,
+        batch_size=2,
+        shuffle=True,
+    )
 
-    HR_val = Generate_data(val_paths)
-    LR_val = Generate_data(val_paths, mode='LR')
+    best_weights = copy.deepcopy(model.state_dict())
+    best_epoch = 0
+    best_psnr = 0.0
 
-    HR_test = Generate_data(test_paths)
-    LR_test = Generate_data(test_paths, mode='LR')
+
+    for epoch in range(EPOCHS):
+
+        model.train()
+        epoch_losses = AverageMeter()
+
+        print('epoch:{}/{}'.format(epoch + 1,EPOCHS))
+
+        for paths in HR_train_paths:
+            
+            # _ 3 63 63
+            LR_data = Generate_data(paths)
+            # _ 63 63
+            HR_data = LR_data.HR
+            # # _ 3 63 63
+            # LR_data = get_LR(LR_data)
+
+            train_data = TensorDataset(LR_data, HR_data)
+            train_data = DataLoader(
+                train_data,
+                batch_size=BATCH_SIZE,
+                shuffle=True,
+                num_workers= 2, 
+                pin_memory= True,
+                drop_last= True,
+            )
+
+            for lr, hr in train_data:
+
+                lr = get_LR(lr)
+                lr = lr.to(device)
+                hr = hr.to(device)
+
+                preds = model(
+                    lr[:,0,:,:].reshape((BATCH_SIZE,1,63,63)),
+                    lr[:,1,:,:].reshape((BATCH_SIZE,1,63,63)),
+                    lr[:,2,:,:].reshape((BATCH_SIZE,1,63,63)),
+                )
+
+                preds = preds.reshape((BATCH_SIZE,63,63))
+
+                loss = criterion(preds, hr)
+
+                epoch_losses.update(loss.item(), len(lr))
+                print(epoch_losses.avg)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+        
+        torch.save(model.state_dict(), os.path.join(OUT_DIR, 'epoch_{}.pth'.format(epoch)))
+
+
+        model.eval()
+        epoch_psnr = AverageMeter()
+
+        for paths in Val_train_paths:
+
+            
+            # _ 3 63 63
+            LR_data = Generate_data(paths)
+            # _ 63 63
+            HR_data = LR_data.HR
+            # # _ 3 63 63
+            # LR_data = get_LR(LR_data)
+
+            train_data = TensorDataset(LR_data, HR_data)
+            train_data = DataLoader(
+                train_data,
+                batch_size=BATCH_SIZE,
+                shuffle=True,
+                num_workers= 2, 
+                pin_memory= True,
+                drop_last= True,
+            )
+
+            for lr, hr in train_data:
+
+                lr = get_LR(lr)
+                lr = lr.to(device)
+                hr = hr.to(device)
+                
+                with torch.no_grad():
+                    preds = model(
+                        lr[:,0,:,:].reshape((BATCH_SIZE,1,63,63)),
+                        lr[:,1,:,:].reshape((BATCH_SIZE,1,63,63)),
+                        lr[:,2,:,:].reshape((BATCH_SIZE,1,63,63)),
+                    )
+
+                    preds = preds.reshape((BATCH_SIZE,63,63))
+                
+                epoch_psnr.update(calc_psnr(preds, hr), len(lr))
+
+
+
+        if epoch_psnr.avg > best_psnr:
+            best_epoch = epoch
+            best_psnr = epoch_psnr.avg
+            best_weights = copy.deepcopy(model.state_dict())       
+
+            print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
+            torch.save(best_weights, os.path.join(OUT_DIR, 'best.pth'))
