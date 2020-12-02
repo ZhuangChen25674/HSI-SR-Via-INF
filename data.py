@@ -26,6 +26,8 @@ class Generate_data(Dataset):
     def __init__(self, paths, channels=31, fis=63, nums=10):
 
         super(Generate_data, self).__init__()
+        torch.manual_seed(0)
+        torch.cuda.manual_seed(0)
         shape = [len(paths), nums, channels, 3, fis, fis]
         self.data = torch.zeros(shape)
 
@@ -67,6 +69,9 @@ class Generate_data(Dataset):
         res[channels - 1][2] = crop_img[channels - 1]
 
         return res
+
+    def get_shape(self):
+        return self.data.shape
     
 
         
