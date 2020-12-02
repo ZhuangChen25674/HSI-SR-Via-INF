@@ -19,62 +19,56 @@ from torchvision import transforms
 from torch.nn.functional import interpolate
 import numpy as np
 
-torch.manual_seed(0)
-torch.cuda.manual_seed(0)
+
 
 
 class Generate_data(Dataset):
-    def __init__(self, paths,  mode='HR', channels=31, fis=63,down_size=[16,16], up_size=[63,63]):
+    def __init__(self, paths, channels=31, fis=63, nums=10):
 
         super(Generate_data, self).__init__()
+        shape = [len(paths), nums, channels, 3, fis, fis]
+        self.data = torch.zeros(shape)
 
-        self.mode = mode
-        self.down_size = down_size
-        self.up_size = up_size
-        self.shape = [len(paths), (channels-1), 3, fis, fis] #slice = 3
-        self.data = torch.zeros(self.shape)
 
         #Traverse all data
         for i in range(len(paths)):
 
             img = h5py.File(paths[i], 'r')['rad']
             img = np.array(img)
-            img = img / (np.max(img) - np.min(img))
+            img = (img - np.min(img)) / (np.max(img) - np.min(img))
             img = torch.tensor(img)
 
-            img = transforms.RandomCrop(63)(img)
-
-            # diff data
-            for l in range(channels - 1):
-
-                self.data[i][l][0] = img[l]
-                self.data[i][l][1] = img[l + 1]
-                self.data[i][l][2] = img[l+1] - img[l]
+            for num in range(nums):
+                crop_img = transforms.RandomCrop(63)(img)
+                # 31 3 63 63
+                self.data[i][num] = self.diff_data(crop_img)
 
 
-        self.data = self.data.reshape((-1, 3, fis, fis))
-        self.shape = self.data.shape
-
-
-        if self.mode == 'LR':
-            #downsample
-            self.data = interpolate(self.data, 
-                                size=self.down_size,
-                                mode='bicubic'
-                                )
-        
-            #upsample
-            self.data = interpolate(
-                                    self.data,
-                                    size=self.up_size,
-                                    mode='bicubic'
-                                )
-
+        self.data = self.data.reshape((-1, 3 ,fis, fis))
+                 
 
     def __len__(self):
-        return self.shape[0] 
+        return self.data.shape[0]
+
+    
+    def __getitem__(self,index):
+        return self.data[index]
+
+
+    def diff_data(self,crop_img, channels=31, fis=63):
+        res = torch.zeros(channels, 3, fis, fis)
+        for l in range(channels -1):
+
+                res[l][0] = crop_img[l]
+                res[l][1] = crop_img[l] - crop_img[l + 1]
+                res[l][2] = crop_img[l+1]
+
+        res[channels - 1][0] = crop_img[channels - 1]
+        res[channels - 1][2] = crop_img[channels - 1]
+
+        return res
     
 
-    def __getitem__(self, index):
-        return self.data[index]
+        
+
         
