@@ -18,9 +18,6 @@ import torch
 
 PATH = '/home/hefeng/data1/HSI-SR/DataSet/ICVL/'
 
-def RMSELoss(yhat,y):
-    return torch.sqrt(torch.mean((yhat-y)**2))
-
 
 #return all paths
 def get_paths(PATH = PATH):
@@ -42,22 +39,6 @@ def get_paths(PATH = PATH):
             test_paths.append(PATH + i.strip())
 
     return train_paths, val_paths, test_paths
-
-
-def get_LR(data,down_size=[16,16], up_size=[63,63]):
-    # num 3 63 63
-    data = interpolate(
-                    data,
-                    size=down_size,
-                    mode='bicubic'
-                                )
-
-    data = interpolate(
-                    data,
-                    size=up_size,
-                    mode='bicubic'
-                                )
-    return data
 
 
 

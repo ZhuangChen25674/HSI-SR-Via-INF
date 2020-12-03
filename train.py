@@ -32,13 +32,14 @@ if __name__ == "__main__":
     
     #GPU
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print('device is {}'.format(device))
     
     torch.manual_seed(0)
     torch.cuda.manual_seed(0)
 
     #set Model
     model = SRCNN().to(device)
-    criterion = RMSELoss
+    criterion = nn.MSELoss(reduction='sum')
 
     optimizer = optim.Adam(
         model.parameters(),
@@ -48,16 +49,6 @@ if __name__ == "__main__":
     #Gerate_data
     train_paths, val_paths, test_paths = get_paths()
 
-    HR_train_paths = DataLoader(
-        train_paths,
-        batch_size=4,
-        shuffle=True,
-    )
-    Val_train_paths = DataLoader(
-        val_paths,
-        batch_size=2,
-        shuffle=True,
-    )
 
     best_weights = copy.deepcopy(model.state_dict())
     best_epoch = 0
@@ -69,30 +60,34 @@ if __name__ == "__main__":
         model.train()
         epoch_losses = AverageMeter()
 
-        print('epoch:{}/{}'.format(epoch + 1,EPOCHS))
+        print('epoch:{}/{}'.format(epoch ,EPOCHS))
+
+        HR_train_paths = DataLoader(
+        train_paths,
+        batch_size=4,
+        shuffle=True,
+    )
 
         for paths in HR_train_paths:
             
-            # _ 3 63 63
-            LR_data = Generate_data(paths)
-            # _ 63 63
-            HR_data = LR_data.HR
-            # # _ 3 63 63
-            # LR_data = get_LR(LR_data)
+            # _ 31 63 63
+            HR_data = Generate_data(paths)
 
-            train_data = TensorDataset(LR_data, HR_data)
             train_data = DataLoader(
-                train_data,
+                HR_data,
                 batch_size=BATCH_SIZE,
                 shuffle=True,
                 num_workers= 2, 
                 pin_memory= True,
                 drop_last= True,
             )
-
+            
+            count = 0
             for lr, hr in train_data:
+                #lr BS 3 63 63
+                #hr BS 63 63
 
-                lr = get_LR(lr)
+                count += 1
                 lr = lr.to(device)
                 hr = hr.to(device)
 
@@ -102,12 +97,14 @@ if __name__ == "__main__":
                     lr[:,2,:,:].reshape((BATCH_SIZE,1,63,63)),
                 )
 
-                preds = preds.reshape((BATCH_SIZE,63,63))
+                hr = hr.reshape((BATCH_SIZE, 1, 63, 63))
 
                 loss = criterion(preds, hr)
 
                 epoch_losses.update(loss.item(), len(lr))
-                print(epoch_losses.avg)
+                
+                if count % 4 == 0:
+                    print('epoch : {} mini-batch : {} loss : {}'.format(epoch,int(count/4), epoch_losses.val))
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -120,19 +117,20 @@ if __name__ == "__main__":
         model.eval()
         epoch_psnr = AverageMeter()
 
+        Val_train_paths = DataLoader(
+        val_paths,
+        batch_size=2,
+        shuffle=True,
+    )
+
         for paths in Val_train_paths:
 
             
             # _ 3 63 63
-            LR_data = Generate_data(paths)
-            # _ 63 63
-            HR_data = LR_data.HR
-            # # _ 3 63 63
-            # LR_data = get_LR(LR_data)
+            HR_data = Generate_data(paths)
 
-            train_data = TensorDataset(LR_data, HR_data)
             train_data = DataLoader(
-                train_data,
+                HR_data,
                 batch_size=BATCH_SIZE,
                 shuffle=True,
                 num_workers= 2, 
@@ -142,7 +140,6 @@ if __name__ == "__main__":
 
             for lr, hr in train_data:
 
-                lr = get_LR(lr)
                 lr = lr.to(device)
                 hr = hr.to(device)
                 
@@ -153,7 +150,7 @@ if __name__ == "__main__":
                         lr[:,2,:,:].reshape((BATCH_SIZE,1,63,63)),
                     )
 
-                    preds = preds.reshape((BATCH_SIZE,63,63))
+                    hr = hr.reshape((BATCH_SIZE,1,63,63))
                 
                 epoch_psnr.update(calc_psnr(preds, hr), len(lr))
 

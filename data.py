@@ -18,18 +18,17 @@ import torch
 from torchvision import transforms 
 from torch.nn.functional import interpolate
 import numpy as np
-
+import gc
 
 
 
 class Generate_data(Dataset):
-    def __init__(self, paths, channels=31, fis=63, nums=10):
+    def __init__(self, paths, channels=31, fis=63, nums=10, down_size=[16,16], up_size=[63,63]):
 
         super(Generate_data, self).__init__()
         torch.manual_seed(0)
         torch.cuda.manual_seed(0)
-        shape = [len(paths), nums, channels, 3, fis, fis]
-        self.data = torch.zeros(shape)
+
         self.HR = torch.zeros([len(paths), nums, channels, fis, fis])
 
         #Traverse all data
@@ -45,19 +44,37 @@ class Generate_data(Dataset):
                 crop_img = transforms.RandomCrop(63)(img)
                 self.HR[i][num] = crop_img
 
-                # 31 3 63 63
-                self.data[i][num] = self.diff_data(crop_img)
+        
+        self.HR = self.HR.reshape((-1, channels, fis, fis)) 
 
+        self.LR = interpolate(
+                    self.HR,
+                    size=down_size,
+                    mode='bicubic'
+                                )
 
-        self.data = self.data.reshape((-1, 3 ,fis, fis))
+        self.LR = interpolate(
+                    self.LR,
+                    size=up_size,
+                    mode='bicubic'
+                                )
+
+        self.diff = torch.zeros([len(paths) * nums, channels, 3, fis, fis])
+        for lr in range(self.LR.shape[0]):
+            self.diff[lr] = self.diff_data(self.LR[lr])
+
+        del self.LR
+        gc.collect()
+
         self.HR = self.HR.reshape((-1, fis, fis))
+        self.diff = self.diff.reshape((-1, 3, fis, fis))
 
     def __len__(self):
-        return self.data.shape[0]
+        return self.HR.shape[0]
 
     
     def __getitem__(self,index):
-        return self.data[index]
+        return self.diff[index], self.HR[index]
 
 
     def diff_data(self,crop_img, channels=31, fis=63):
@@ -74,11 +91,11 @@ class Generate_data(Dataset):
         return res
 
 
-    def get_HR(self):
-        return self.HR
+    # def get_HR(self):
+    #     return self.HR
 
-    def size(self, index):
-        return self.data.size(index)
+    # def size(self, index):
+    #     return self.data.size(index)
     
 
         
