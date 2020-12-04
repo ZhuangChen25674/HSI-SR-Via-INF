@@ -48,7 +48,7 @@ if __name__ == "__main__":
     )
 
     #Gerate_data
-    train_paths, val_paths, test_paths = get_paths()
+    train_paths, val_paths, _ = get_paths()
 
 
     best_weights = copy.deepcopy(model.state_dict())
