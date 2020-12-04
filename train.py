@@ -25,7 +25,8 @@ import os, copy
 
 EPOCHS = 400
 LR = 1e-4
-BATCH_SIZE = 32
+TRAIN_BATCH_SIZE = 32
+VAL_BATCH_SIZE = 31
 OUT_DIR = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/weight/'
 
 if __name__ == "__main__":
@@ -51,9 +52,12 @@ if __name__ == "__main__":
 
 
     best_weights = copy.deepcopy(model.state_dict())
-    best_epoch = 0
-    best_psnr = 0.0
+    best_weights_sam = copy.deepcopy(model.state_dict())
 
+    best_epoch = 0
+    best_epoch_sam = 0
+    best_psnr = 0.0
+    best_sam = 180.0
 
     for epoch in range(EPOCHS):
 
@@ -75,7 +79,7 @@ if __name__ == "__main__":
 
             train_data = DataLoader(
                 HR_data,
-                batch_size=BATCH_SIZE,
+                batch_size=TRAIN_BATCH_SIZE,
                 shuffle=True,
                 num_workers= 2, 
                 pin_memory= True,
@@ -92,12 +96,12 @@ if __name__ == "__main__":
                 hr = hr.to(device)
 
                 preds = model(
-                    lr[:,0,:,:].reshape((BATCH_SIZE,1,63,63)),
-                    lr[:,1,:,:].reshape((BATCH_SIZE,1,63,63)),
-                    lr[:,2,:,:].reshape((BATCH_SIZE,1,63,63)),
+                    lr[:,0,:,:].reshape((TRAIN_BATCH_SIZE,1,63,63)),
+                    lr[:,1,:,:].reshape((TRAIN_BATCH_SIZE,1,63,63)),
+                    lr[:,2,:,:].reshape((TRAIN_BATCH_SIZE,1,63,63)),
                 )
 
-                hr = hr.reshape((BATCH_SIZE, 1, 63, 63))
+                hr = hr.reshape((TRAIN_BATCH_SIZE, 1, 63, 63))
 
                 loss = criterion(preds, hr)
 
@@ -116,6 +120,7 @@ if __name__ == "__main__":
 
         model.eval()
         epoch_psnr = AverageMeter()
+        epoch_sam = AverageMeter()
 
         Val_train_paths = DataLoader(
         val_paths,
@@ -131,8 +136,8 @@ if __name__ == "__main__":
 
             train_data = DataLoader(
                 HR_data,
-                batch_size=BATCH_SIZE,
-                shuffle=True,
+                batch_size=VAL_BATCH_SIZE,
+                shuffle=False,
                 num_workers= 2, 
                 pin_memory= True,
                 drop_last= True,
@@ -145,14 +150,15 @@ if __name__ == "__main__":
                 
                 with torch.no_grad():
                     preds = model(
-                        lr[:,0,:,:].reshape((BATCH_SIZE,1,63,63)),
-                        lr[:,1,:,:].reshape((BATCH_SIZE,1,63,63)),
-                        lr[:,2,:,:].reshape((BATCH_SIZE,1,63,63)),
+                        lr[:,0,:,:].reshape((VAL_BATCH_SIZE,1,63,63)),
+                        lr[:,1,:,:].reshape((VAL_BATCH_SIZE,1,63,63)),
+                        lr[:,2,:,:].reshape((VAL_BATCH_SIZE,1,63,63)),
                     )
 
-                    hr = hr.reshape((BATCH_SIZE,1,63,63))
+                    preds = preds.reshape((VAL_BATCH_SIZE,63,63))
                 
                 epoch_psnr.update(calc_psnr(preds, hr), len(lr))
+                epoch_sam.update(SAM_GPU(preds, hr))
 
 
 
@@ -161,5 +167,13 @@ if __name__ == "__main__":
             best_psnr = epoch_psnr.avg
             best_weights = copy.deepcopy(model.state_dict())       
 
-            print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
-            torch.save(best_weights, os.path.join(OUT_DIR, 'best.pth'))
+            print('best psnr epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
+            torch.save(best_weights, os.path.join(OUT_DIR, 'best_psnr.pth'))
+        
+        if epoch_sam.avg < best_sam:
+            best_epoch_sam = epoch
+            best_sam = epoch_sam.avg
+            best_weights_sam = copy.deepcopy(model.state_dict())       
+
+            print('best sam epoch: {}, sam: {:.2f}'.format(best_epoch_sam, best_sam))
+            torch.save(best_weights_sam, os.path.join(OUT_DIR, 'best_sam.pth'))
