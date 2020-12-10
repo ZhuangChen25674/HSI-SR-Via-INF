@@ -15,7 +15,7 @@
 from utils import *
 from net import SRCNN
 import torch
-from data import Generate_data
+from data import Test_data
 from torch.utils.data import DataLoader
 
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     model_psnr.eval()
     
-    HR_data = Generate_data(test_paths)
+    HR_data = Test_data(test_paths)
 
     test_data = DataLoader(
                 HR_data,
@@ -107,10 +107,32 @@ if __name__ == "__main__":
                 SAM_GPU(sam_preds,hr)
         ))
 
-        count += 1
 
         PSNRS.append((calc_psnr(psnr_preds,hr),calc_psnr(sam_preds,hr)))
         SAMS.append((SAM_GPU(psnr_preds,hr),SAM_GPU(sam_preds,hr)))
+
+
+        if count % 396 == 0:
+            begin = int((count / 396)) - 1
+            begin *= 396
+            end =  int((count / 396))
+            end *= 396
+            # print(begin,end)
+            # print(PSNRS[begin])
+            print(sum([i[0]  for i in PSNRS[begin:end]]))
+            print('psnr model img{} average psnr is {:.2f} average sam is {:.2f}'.format(
+                int(count / 396),
+                sum([i[0]  for i in PSNRS[begin:end]])/ 396.0,
+                sum([i[0]  for i in SAMS[begin:end]]) / 396.0,
+            ))
+
+            print('sam model img{} average psnr is {:.2f} average sam is {:.2f}'.format(
+                int(count / 396),
+                sum([i[1] for i in PSNRS[begin:end]]) / 396.0,
+                sum([i[1] for i in SAMS[begin:end]]) / 396.0,
+            ))
+
+        count += 1
 
     print('averge psnr of psnr model is {:.2f}'.format(
         sum([i[0] for i in PSNRS]) / len(PSNRS)

@@ -157,8 +157,18 @@ if __name__ == "__main__":
 
                     preds = preds.reshape((VAL_BATCH_SIZE,63,63))
                 
+
                 epoch_psnr.update(calc_psnr(preds, hr), len(lr))
                 epoch_sam.update(SAM_GPU(preds, hr))
+
+        print('epoch : {} average sam is {}'.format(
+            epoch,
+            epoch_sam.avg)
+        )
+        print('epoch : {} average psnr is {}'.format(
+            epoch,
+            epoch_psnr.avg)
+        )
 
 
 
@@ -177,3 +187,5 @@ if __name__ == "__main__":
 
             print('best sam epoch: {}, sam: {:.2f}'.format(best_epoch_sam, best_sam))
             torch.save(best_weights_sam, os.path.join(OUT_DIR, 'best_sam.pth'))
+
+

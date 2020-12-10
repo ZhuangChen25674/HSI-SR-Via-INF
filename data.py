@@ -91,13 +91,77 @@ class Generate_data(Dataset):
         return res
 
 
-    # def get_HR(self):
-    #     return self.HR
+class Test_data(Dataset):
 
-    # def size(self, index):
-    #     return self.data.size(index)
-    
+    def __init__(self, paths, channels=31, fis=63,down_size=[16,16], up_size=[63,63]):
 
+        num = 396
+        shape = [len(paths), num, channels, fis, fis]
+        self.HR = torch.zeros(shape)
+
+        for i in range(len(paths)):
+
+            img = h5py.File(paths[i], 'r')['rad']
+            img = np.array(img)
+            img = (img - np.min(img)) / (np.max(img) - np.min(img))
+            img = torch.tensor(img)
         
+            print(i,img.shape)
+            count = 0
+            for x in range(0, 1392 - fis, fis):
+                for y in range(0, 1194 - fis, fis):
+                    
+                    self.HR[i][count] = img[:,x:x+fis,y:y+fis]
+                    count += 1
+            
+        self.HR = self.HR.reshape((-1,channels,fis,fis))
+                  
 
+        self.LR = interpolate(
+                    self.HR,
+                    size=down_size,
+                    mode='bicubic'
+                                )
+
+        self.LR = interpolate(
+                    self.LR,
+                    size=up_size,
+                    mode='bicubic'
+                                )
+
+        self.diff = torch.zeros([len(paths) * num, channels, 3, fis, fis])
+        for lr in range(self.LR.shape[0]):
+            self.diff[lr] = self.diff_data(self.LR[lr])
+
+        del self.LR
+        gc.collect()
+
+        self.HR = self.HR.reshape((-1, fis, fis))
+        self.diff = self.diff.reshape((-1, 3, fis, fis))
+
+
+
+    def __len__(self):
+        return self.HR.shape[0]
+
+
+
+    
+    def __getitem__(self,index):
+        return self.diff[index], self.HR[index]
+
+
+
+    def diff_data(self,crop_img, channels=31, fis=63):
+        res = torch.zeros(channels, 3, fis, fis)
+        for l in range(channels -1):
+
+                res[l][0] = crop_img[l]
+                res[l][1] = crop_img[l] - crop_img[l + 1]
+                res[l][2] = crop_img[l+1]
+
+        res[channels - 1][0] = crop_img[channels - 1]
+        res[channels - 1][2] = crop_img[channels - 1]
+
+        return res
         
