@@ -16,7 +16,7 @@
 from torch.nn.functional import interpolate
 import torch
 import numpy as np
-
+from PIL import Image
 
 
 PATH = '/home/hefeng/data1/HSI-SR/DataSet/ICVL/'
@@ -81,3 +81,70 @@ def SAM_GPU(im_fake, im_true):
     sam[sam != sam] = 0
     sam_sum = torch.sum(sam) / (H * W) / np.pi * 180
     return sam_sum
+
+
+def plot():
+
+    from matplotlib import pyplot as plt
+
+    path = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/train.log'
+    sams = []
+    psnrs = []
+
+    with open(path,'r') as f:
+        for line in f.readlines():
+            
+            line = line.strip()
+
+            if 'average sam' in line:
+                sams.append(float(line.split(' ')[-1]))
+
+            if 'average psnr' in line:
+                psnrs.append(float(line.split(' ')[-1]))
+
+    epochs = [i for i in range(400)]
+
+    fib_size = (5,4)
+    fon_size = 12
+
+    plt.figure(figsize=fib_size)
+    plt.title('sam of every epoch',fontsize=fon_size)
+    plt.xlabel('epoch',fontsize=fon_size)
+    plt.ylabel('sam', fontsize=fon_size)
+    plt.plot(epochs, sams, 'k.')
+    plt.grid(True, linestyle = "-.", color = "k", linewidth = "1.1")
+    plt.savefig('sam.tiff',dpi=600,format='tiff')
+
+
+    plt.figure(figsize=fib_size)
+    plt.title('psnr of every epoch',fontsize=fon_size)
+    plt.xlabel('epoch',fontsize=fon_size)
+    plt.ylabel('psnr', fontsize=fon_size)
+    plt.plot(epochs, psnrs, 'k.')
+    plt.grid(True, linestyle = "-.", color = "k", linewidth = "1.1")
+    plt.savefig('psnr.tiff',dpi=600,format='tiff')
+
+
+def show_img(img, name):
+
+    shape = img.shape
+    img = img.to('cpu')
+    img = img.numpy()
+
+    b = np.mean(img[:11], axis=0)
+    g = np.mean(img[11:21], axis=0)
+    r = np.mean(img[21:], axis=0)
+
+    rgb = np.zeros((shape[1],shape[2],3))
+    rgb[: ,: ,0] = r
+    rgb[: ,: ,1] = g
+    rgb[: ,: ,2] = b
+    rgb *= 255
+    rgb = rgb.astype(np.uint8)
+
+    img = Image.fromarray(rgb)
+
+    path = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/' + name 
+    
+    img.save(path)
+

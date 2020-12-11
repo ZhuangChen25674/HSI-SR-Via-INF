@@ -36,7 +36,7 @@ class Generate_data(Dataset):
 
             img = h5py.File(paths[i], 'r')['rad']
             img = np.array(img)
-            img = (img - np.min(img)) / (np.max(img) - np.min(img))
+            img /= 4095.0
             img = torch.tensor(img)
 
             for num in range(nums):
@@ -103,7 +103,7 @@ class Test_data(Dataset):
 
             img = h5py.File(paths[i], 'r')['rad']
             img = np.array(img)
-            img = (img - np.min(img)) / (np.max(img) - np.min(img))
+            img /= 4095.0
             img = torch.tensor(img)
         
             print(i,img.shape)

@@ -94,15 +94,39 @@ if __name__ == "__main__":
 
             sam_preds = sam_preds.reshape((TEST_BATCH_SIZE,63,63))
 
-        print('img{}_psnr_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
-                count,
+            psnr_pre_name = "pre_img{}_{}_psnr_model_psnr{}_sam{}.png".format(
+                count//396,
+                count % 396,
+                calc_psnr(psnr_preds,hr),
+                SAM_GPU(psnr_preds,hr)
+            )
+            sam_pre_name = 'pre_img{}_{}_sam_model_psnr{}_sam{}.png'.format(
+                count//396,
+                count % 396,
+                calc_psnr(sam_preds,hr),
+                SAM_GPU(sam_preds,hr)
+            )
+
+            hr_name = 'hr_img{}_{}.png'.format(
+                count//396,
+                count % 396,
+            )
+
+            show_img(psnr_preds,psnr_pre_name)
+            show_img(sam_preds, sam_pre_name)
+            show_img(hr, hr_name)
+
+        print('img{}_{}_psnr_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
+                count//396,
+                count % 396,
                 calc_psnr(psnr_preds,hr),
                 SAM_GPU(psnr_preds,hr)
         ))
 
 
-        print('img{}_sam_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
-                count,
+        print('img{}_{}_sam_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
+                count//396,
+                count % 396,
                 calc_psnr(sam_preds,hr),
                 SAM_GPU(sam_preds,hr)
         ))
@@ -117,19 +141,28 @@ if __name__ == "__main__":
             begin *= 396
             end =  int((count / 396))
             end *= 396
-            # print(begin,end)
-            # print(PSNRS[begin])
-            print(sum([i[0]  for i in PSNRS[begin:end]]))
-            print('psnr model img{} average psnr is {:.2f} average sam is {:.2f}'.format(
+
+            
+            print('psnr model img{} average psnr is {:.2f} average sam is {:.2f} \
+max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
                 int(count / 396),
                 sum([i[0]  for i in PSNRS[begin:end]])/ 396.0,
                 sum([i[0]  for i in SAMS[begin:end]]) / 396.0,
+                max([i[0]  for i in PSNRS[begin:end]]),
+                min([i[0]  for i in PSNRS[begin:end]]),
+                max([i[0]  for i in SAMS[begin:end]]),
+                min([i[0]  for i in SAMS[begin:end]])
             ))
 
-            print('sam model img{} average psnr is {:.2f} average sam is {:.2f}'.format(
+            print('sam model img{} average psnr is {:.2f} average sam is {:.2f} \
+max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
                 int(count / 396),
                 sum([i[1] for i in PSNRS[begin:end]]) / 396.0,
                 sum([i[1] for i in SAMS[begin:end]]) / 396.0,
+                max([i[1]  for i in PSNRS[begin:end]]),
+                min([i[1]  for i in PSNRS[begin:end]]),
+                max([i[1]  for i in SAMS[begin:end]]),
+                min([i[1]  for i in SAMS[begin:end]])
             ))
 
         count += 1

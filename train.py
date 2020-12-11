@@ -108,7 +108,7 @@ if __name__ == "__main__":
                 epoch_losses.update(loss.item(), len(lr))
                 
                 if count % 4 == 0:
-                    print('epoch : {} mini-batch : {} loss : {}'.format(epoch,int(count/4), epoch_losses.val))
+                    print('epoch : {} mini-batch : {} loss : {:.2f}'.format(epoch,int(count/4), epoch_losses.val))
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -161,11 +161,11 @@ if __name__ == "__main__":
                 epoch_psnr.update(calc_psnr(preds, hr), len(lr))
                 epoch_sam.update(SAM_GPU(preds, hr))
 
-        print('epoch : {} average sam is {}'.format(
+        print('epoch : {} average sam is {:.2f}'.format(
             epoch,
             epoch_sam.avg)
         )
-        print('epoch : {} average psnr is {}'.format(
+        print('epoch : {} average psnr is {:.2f}'.format(
             epoch,
             epoch_psnr.avg)
         )

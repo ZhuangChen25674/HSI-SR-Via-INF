@@ -1,3 +1,6 @@
 weight/*
 *.pyc
 *.log
+img/*
+*.tiff
+*.zip
