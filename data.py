@@ -95,7 +95,7 @@ class Test_data(Dataset):
 
     def __init__(self, paths, channels=31, fis=63,down_size=[16,16], up_size=[63,63]):
 
-        num = 396
+        num = 252
         shape = [len(paths), num, channels, fis, fis]
         self.HR = torch.zeros(shape)
 
@@ -108,8 +108,8 @@ class Test_data(Dataset):
         
             print(i,img.shape)
             count = 0
-            for x in range(0, 1392 - fis, fis):
-                for y in range(0, 1194 - fis, fis):
+            for x in range(63 * 2, 1392 - 3 * fis, fis):
+                for y in range(63 * 2, 1194 - 3 * fis, fis):
                     
                     self.HR[i][count] = img[:,x:x+fis,y:y+fis]
                     count += 1

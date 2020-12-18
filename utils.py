@@ -125,26 +125,111 @@ def plot():
     plt.savefig('psnr.tiff',dpi=600,format='tiff')
 
 
-def show_img(img, name):
+def show_img(fis=63):
 
-    shape = img.shape
-    img = img.to('cpu')
-    img = img.numpy()
+    PSNR_IMG = torch.load('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/PSNR_IMG.pth')
+    SAM_IMG = torch.load('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/SAM_IMG.pth')
 
-    b = np.mean(img[:11], axis=0)
-    g = np.mean(img[11:21], axis=0)
-    r = np.mean(img[21:], axis=0)
+    PSNR_IMG = PSNR_IMG.reshape([8, 252, 31, 63, 63])
+    SAM_IMG = SAM_IMG.reshape([8, 252, 31, 63, 63])
 
-    rgb = np.zeros((shape[1],shape[2],3))
-    rgb[: ,: ,0] = r
-    rgb[: ,: ,1] = g
-    rgb[: ,: ,2] = b
-    rgb *= 255
-    rgb = rgb.astype(np.uint8)
+    for i in range(8):
+        psnr_img = torch.zeros([31, 18 * 63, 14 * 63, ])
+        sam_img = torch.zeros([31, 18 * 63, 14 * 63, ])
+        hr_img = torch.zeros([31, 18 * 63, 14 * 63, ])
+        count = 0
 
-    img = Image.fromarray(rgb)
+        for x in range(0, 1134 , fis):
+            for y in range(0, 882 , fis):
+                psnr_img[:,x:x+fis,y:y+fis] = PSNR_IMG[i][count]
+                sam_img[:,x:x+fis,y:y+fis] = SAM_IMG[i][count]
+                count += 1
+        
+        psnr_img = psnr_img.numpy()
+        b = np.mean(psnr_img[:11], axis=0)
+        print(b.shape)
+        g = np.mean(psnr_img[11:21], axis=0)
+        r = np.mean(psnr_img[21:], axis=0)
 
-    path = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/' + name 
+        rgb = np.zeros((1134,882,3))
+        rgb[: ,: ,0] = r
+        rgb[: ,: ,1] = g
+        rgb[: ,: ,2] = b
+        rgb *= 255
+        rgb = rgb.astype(np.uint8)
+
+        img = Image.fromarray(rgb)
+        img = img.rotate(180)
+        
+        path = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/psnr_img{}.png'.format(
+            i
+        )
     
-    img.save(path)
+        img.save(path)
 
+        sam_img = sam_img.numpy()
+        b = np.mean(sam_img[:11], axis=0)
+        g = np.mean(sam_img[11:21], axis=0)
+        r = np.mean(sam_img[21:], axis=0)
+
+        rgb = np.zeros((1134,882,3))
+        rgb[: ,: ,0] = r
+        rgb[: ,: ,1] = g
+        rgb[: ,: ,2] = b
+        rgb *= 255
+        rgb = rgb.astype(np.uint8)
+
+        img = Image.fromarray(rgb)
+        img = img.rotate(180)
+        path = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/sam_img{}.png'.format(
+            i
+        )
+    
+        img.save(path)
+
+def save_img(fis=63):
+
+    PSNR_IMG = torch.load('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/PSNR_IMG.pth')
+    SAM_IMG = torch.load('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/SAM_IMG.pth')
+    HR = torch.load('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/HR.pth')
+
+    PSNR_IMG = PSNR_IMG.reshape([8, 252, 31, 63, 63])
+    SAM_IMG = SAM_IMG.reshape([8, 252, 31, 63, 63])
+    HR = HR.reshape([8, 252, 31, 63, 63])
+
+    for i in range(8):
+        psnr_img = torch.zeros([31, 18 * 63, 14 * 63, ])
+        sam_img = torch.zeros([31, 18 * 63, 14 * 63, ])
+        hr_img = torch.zeros([31, 18 * 63, 14 * 63, ])
+        count = 0
+
+        for x in range(0, 1134 , fis):
+            for y in range(0, 882 , fis):
+                psnr_img[:,x:x+fis,y:y+fis] = PSNR_IMG[i][count]
+                sam_img[:,x:x+fis,y:y+fis] = SAM_IMG[i][count]
+                hr_img[:,x:x+fis,y:y+fis] = HR[i][count]
+                count += 1
+        print(count)
+        psnr_img = psnr_img.numpy()
+        psnr_img = np.transpose(psnr_img, (1, 2, 0))
+        psnr_img *= 255
+        psnr_img = psnr_img.astype(np.uint8)
+
+
+        sam_img = sam_img.numpy()
+        sam_img = np.transpose(sam_img,(1,2,0))
+        sam_img *= 255
+        sam_img = sam_img.astype(np.uint8)
+
+        hr_img = hr_img.numpy()
+        hr_img = np.transpose(hr_img,(1,2,0))
+        hr_img *= 255
+        hr_img = hr_img.astype(np.uint8)
+        print(i, psnr_img.shape,sam_img.shape)
+        
+        np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/psnr_img{}.npy'.format(i+1), psnr_img)
+        np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/sam_img{}.npy'.format(i+1), sam_img)
+        np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/hr_img{}.npy'.format(i+1), hr_img)
+
+
+show_img()

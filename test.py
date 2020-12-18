@@ -24,7 +24,9 @@ TEST_BATCH_SIZE = 31
 WEIGHT_PATH = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/weight/'
 PSNRS = []
 SAMS = []
-
+PSNR_IMG = torch.zeros([252*8, 31, 63, 63])
+SAM_IMG = torch.zeros([252*8, 31, 63, 63])
+HR = torch.zeros([252*8, 31, 63, 63])
 
 if __name__ == "__main__":
     
@@ -85,6 +87,8 @@ if __name__ == "__main__":
                     )
 
             psnr_preds = psnr_preds.reshape((TEST_BATCH_SIZE,63,63))
+            #保存psnr结果
+            PSNR_IMG[count-1] = psnr_preds
 
             sam_preds = model_sam(
                     lr[:,0,:,:].reshape((TEST_BATCH_SIZE,1,63,63)),
@@ -93,40 +97,39 @@ if __name__ == "__main__":
                     )
 
             sam_preds = sam_preds.reshape((TEST_BATCH_SIZE,63,63))
+            #保存sam结果
+            SAM_IMG[count-1] = sam_preds
 
+            HR[count-1] = hr
             psnr_pre_name = "pre_img{}_{}_psnr_model_psnr{}_sam{}.png".format(
-                count//396,
-                count % 396,
+                count//252,
+                count % 252,
                 calc_psnr(psnr_preds,hr),
                 SAM_GPU(psnr_preds,hr)
             )
             sam_pre_name = 'pre_img{}_{}_sam_model_psnr{}_sam{}.png'.format(
-                count//396,
-                count % 396,
+                count//252,
+                count % 252,
                 calc_psnr(sam_preds,hr),
                 SAM_GPU(sam_preds,hr)
             )
 
             hr_name = 'hr_img{}_{}.png'.format(
-                count//396,
-                count % 396,
+                count//252,
+                count % 252,
             )
 
-            show_img(psnr_preds,psnr_pre_name)
-            show_img(sam_preds, sam_pre_name)
-            show_img(hr, hr_name)
-
         print('img{}_{}_psnr_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
-                count//396,
-                count % 396,
+                count//252,
+                count % 252,
                 calc_psnr(psnr_preds,hr),
                 SAM_GPU(psnr_preds,hr)
         ))
 
 
         print('img{}_{}_sam_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
-                count//396,
-                count % 396,
+                count//252,
+                count % 252,
                 calc_psnr(sam_preds,hr),
                 SAM_GPU(sam_preds,hr)
         ))
@@ -136,18 +139,18 @@ if __name__ == "__main__":
         SAMS.append((SAM_GPU(psnr_preds,hr),SAM_GPU(sam_preds,hr)))
 
 
-        if count % 396 == 0:
-            begin = int((count / 396)) - 1
-            begin *= 396
-            end =  int((count / 396))
-            end *= 396
+        if count % 252 == 0:
+            begin = int((count / 252)) - 1
+            begin *= 252
+            end =  int((count / 252))
+            end *= 252
 
             
             print('psnr model img{} average psnr is {:.2f} average sam is {:.2f} \
 max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
-                int(count / 396),
-                sum([i[0]  for i in PSNRS[begin:end]])/ 396.0,
-                sum([i[0]  for i in SAMS[begin:end]]) / 396.0,
+                int(count / 252),
+                sum([i[0]  for i in PSNRS[begin:end]])/ 252.0,
+                sum([i[0]  for i in SAMS[begin:end]]) / 252.0,
                 max([i[0]  for i in PSNRS[begin:end]]),
                 min([i[0]  for i in PSNRS[begin:end]]),
                 max([i[0]  for i in SAMS[begin:end]]),
@@ -156,9 +159,9 @@ max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
 
             print('sam model img{} average psnr is {:.2f} average sam is {:.2f} \
 max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
-                int(count / 396),
-                sum([i[1] for i in PSNRS[begin:end]]) / 396.0,
-                sum([i[1] for i in SAMS[begin:end]]) / 396.0,
+                int(count / 252),
+                sum([i[1] for i in PSNRS[begin:end]]) / 252.0,
+                sum([i[1] for i in SAMS[begin:end]]) / 252.0,
                 max([i[1]  for i in PSNRS[begin:end]]),
                 min([i[1]  for i in PSNRS[begin:end]]),
                 max([i[1]  for i in SAMS[begin:end]]),
@@ -180,3 +183,8 @@ max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
     print('averge sam of sam model is {:.2f}'.format(
         sum([i[1] for i in SAMS]) / len(SAMS)
     ))
+
+    torch.save(PSNR_IMG, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/PSNR_IMG.pth')
+    torch.save(SAM_IMG, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/SAM_IMG.pth')
+    torch.save(HR, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/HR.pth')
+    print(count)
