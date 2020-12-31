@@ -229,7 +229,7 @@ def save_img(fis=63):
         
         np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/psnr_img{}.npy'.format(i+1), psnr_img)
         np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/sam_img{}.npy'.format(i+1), sam_img)
-        np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/hr_img{}.npy'.format(i+1), hr_img)
+        # np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/hr_img{}.npy'.format(i+1), hr_img)
 
 
 show_img()
