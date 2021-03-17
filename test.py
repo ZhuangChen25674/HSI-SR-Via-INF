@@ -119,20 +119,20 @@ if __name__ == "__main__":
                 count % 252,
             )
 
-        print('img{}_{}_psnr_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
-                count//252,
-                count % 252,
-                calc_psnr(psnr_preds,hr),
-                SAM_GPU(psnr_preds,hr)
-        ))
+        # print('img{}_{}_psnr_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
+        #         count//252,
+        #         count % 252,
+        #         calc_psnr(psnr_preds,hr),
+        #         SAM_GPU(psnr_preds,hr)
+        # ))
 
 
-        print('img{}_{}_sam_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
-                count//252,
-                count % 252,
-                calc_psnr(sam_preds,hr),
-                SAM_GPU(sam_preds,hr)
-        ))
+        # print('img{}_{}_sam_model : test psnr is {:.2f}, test sam is {:.2f}'.format(
+        #         count//252,
+        #         count % 252,
+        #         calc_psnr(sam_preds,hr),
+        #         SAM_GPU(sam_preds,hr)
+        # ))
 
 
         PSNRS.append((calc_psnr(psnr_preds,hr),calc_psnr(sam_preds,hr)))
