@@ -13,7 +13,7 @@
 '''
 
 from utils import *
-from net import SRCNN
+from net import INF
 import torch
 from data import Test_data
 from torch.utils.data import DataLoader
@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 
 
 TEST_BATCH_SIZE = 31
-WEIGHT_PATH = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/weight/'
+WEIGHT_PATH = '/home/yons/data1/chenzhuang/HSI-SR/HSI-SR-Via-INF/weight/'
 PSNRS = []
 SAMS = []
 PSNR_IMG = torch.zeros([252*8, 31, 63, 63])
@@ -36,14 +36,14 @@ if __name__ == "__main__":
     print('test decice is {}'.format(device))
 
     #best psnr model
-    model_psnr = SRCNN().to(device)
+    model_psnr = INF().to(device)
     state_dict_psnr = model_psnr.state_dict()
 
     #best sam model
-    model_sam = SRCNN().to(device)
+    model_sam = INF().to(device)
     state_dict_sam = model_sam.state_dict()
 
-    psnr_path = WEIGHT_PATH + 'best_psnr.pth'
+    psnr_path = WEIGHT_PATH + 'INF_best_psnr.pth'
     # load all tensor to gpu 1
     for n, p in torch.load(psnr_path, map_location=lambda storage, loc: storage).items():
         if n in state_dict_psnr.keys():
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         else:
             raise KeyError(n)
 
-    sam_path = WEIGHT_PATH + 'best_sam.pth'
+    sam_path = WEIGHT_PATH + 'INF_best_sam.pth'
     # load all tensor to gpu 1
     for n, p in torch.load(sam_path, map_location=lambda storage, loc: storage).items():
         if n in state_dict_sam.keys():
@@ -184,7 +184,7 @@ max_min psnr is {:.2f} {:.2f} max_min sam is {:.2f} {:.2f}'.format(
         sum([i[1] for i in SAMS]) / len(SAMS)
     ))
 
-    torch.save(PSNR_IMG, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/PSNR_IMG.pth')
-    torch.save(SAM_IMG, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/SAM_IMG.pth')
-    torch.save(HR, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/HR.pth')
-    print(count)
+    # torch.save(PSNR_IMG, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/PSNR_IMG.pth')
+    # torch.save(SAM_IMG, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/SAM_IMG.pth')
+    # torch.save(HR, '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/HR.pth')
+    # print(count)

@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image
 
 
-PATH = '/home/hefeng/data1/HSI-SR/DataSet/ICVL/'
+PATH = '/home/yons/data1/chenzhuang/HSI-SR/DataSet/ICVL/'
 
 
 #return all paths
@@ -232,4 +232,3 @@ def save_img(fis=63):
         # np.save('/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/img/hr_img{}.npy'.format(i+1), hr_img)
 
 
-show_img()

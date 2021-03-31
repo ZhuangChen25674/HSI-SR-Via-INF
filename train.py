@@ -14,7 +14,7 @@
 
 
 import torch
-from net import SRCNN
+from net import INF
 from torch import nn
 import torch.optim as optim
 from data import Generate_data
@@ -27,7 +27,7 @@ EPOCHS = 400
 LR = 1e-4
 TRAIN_BATCH_SIZE = 32
 VAL_BATCH_SIZE = 31
-OUT_DIR = '/home/hefeng/data1/HSI-SR/HSI-SR-Via-INF/weight/'
+OUT_DIR = '/home/yons/data1/chenzhuang/HSI-SR/HSI-SR-Via-INF/weight'
 
 if __name__ == "__main__":
     
@@ -39,8 +39,8 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(0)
 
     #set Model
-    model = SRCNN().to(device)
-    criterion = nn.MSELoss(reduction='sum')
+    model = INF().to(device)
+    criterion = nn.L1Loss(reduction='sum')
 
     optimizer = optim.Adam(
         model.parameters(),
@@ -115,7 +115,7 @@ if __name__ == "__main__":
                 optimizer.step()
 
         
-        torch.save(model.state_dict(), os.path.join(OUT_DIR, 'epoch_{}.pth'.format(epoch)))
+        # torch.save(model.state_dict(), os.path.join(OUT_DIR, 'epoch_{}.pth'.format(epoch)))
 
 
         model.eval()
@@ -178,7 +178,7 @@ if __name__ == "__main__":
             best_weights = copy.deepcopy(model.state_dict())       
 
             print('best psnr epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
-            torch.save(best_weights, os.path.join(OUT_DIR, 'best_psnr.pth'))
+            torch.save(best_weights, os.path.join(OUT_DIR, 'INF_best_psnr.pth'))
         
         if epoch_sam.avg < best_sam:
             best_epoch_sam = epoch
@@ -186,6 +186,6 @@ if __name__ == "__main__":
             best_weights_sam = copy.deepcopy(model.state_dict())       
 
             print('best sam epoch: {}, sam: {:.2f}'.format(best_epoch_sam, best_sam))
-            torch.save(best_weights_sam, os.path.join(OUT_DIR, 'best_sam.pth'))
+            torch.save(best_weights_sam, os.path.join(OUT_DIR, 'INF_best_sam.pth'))
 
 
